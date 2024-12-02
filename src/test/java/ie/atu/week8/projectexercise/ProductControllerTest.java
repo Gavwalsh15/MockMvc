@@ -1,11 +1,32 @@
 package ie.atu.week8.projectexercise;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.validation.constraints.Null;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mock;
+import org.springframework.beans.factory.annotation.Autowired;
+
+import static org.mockito.ArgumentMatchers.any;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.test.web.servlet.MockMvc;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+
+import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.when;
 
+@WebMvcTest(ProductController.class)
 class ProductControllerTest {
+
+    @Autowired
+    private MockMvc mockMvc;
+
+    @MockBean
+    private ProductService productService;
 
     @BeforeEach
     void setUp() {
@@ -13,14 +34,35 @@ class ProductControllerTest {
 
     @Test
     void getAllProducts() {
+
     }
 
     @Test
-    void testGetProductById() {
+    void testGetProductById() throws Exception {
+        Product product = new Product(1L, "Kettle", "Thing", 35);
+        when(productService.getProductById(1L)).thenReturn(Optional.of(product));
+        mockMvc.perform(get("/products/1"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.name").value("Kettle"))
+                .andExpect(jsonPath("$.description").value("Thing")
+                );
+
+        mockMvc.perform(get("/products/3"))
+                .andExpect(status().isNotFound());
     }
 
     @Test
-    void createProduct() {
+    void testCreateProduct() throws Exception {
+        Product product = new Product(null, "Kettle", "Thing", 35);
+        when(productService.saveProduct(any(Product.class))).thenReturn(product);
+
+        ObjectMapper om = new ObjectMapper();
+        String valueJson = om.writeValueAsString(product);
+        mockMvc.perform(post("/products").contentType("application/json").content(valueJson))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.name").value("Kettle"))
+                .andExpect(jsonPath("$.description").value("Thing")
+                );
     }
 
     @Test
@@ -28,6 +70,6 @@ class ProductControllerTest {
     }
 
     @Test
-    void deleteProduct() {
+    void testDeleteProduct() {
     }
 }
